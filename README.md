@@ -96,6 +96,25 @@ FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE c.relispartition AND c.relkind = 'r';
 ```
 
+## Watching a repack
+
+PostgreSQL 19 ships `pg_stat_progress_repack`. On a 1549 MB table it reports:
+
+```
+phase                        heap blocks        tuples scanned   indexes rebuilt
+initializing                       0 / 0                     0                 0
+seq scanning heap            249 / 181,819                 4,092               2
+rebuilding index         181,819 / 181,819             3,000,000               2
+catch-up                 181,819 / 181,819             3,000,000               2
+performing final cleanup 181,819 / 181,819             3,000,000               2
+```
+
+`catch-up` is the logical-decoding replay of everything that changed during the
+rewrite. On a large table this is how you tell "nearly done" from "barely started".
+
+It cancels cleanly too: `pg_cancel_backend` a second into a 1 GB repack left the
+table untouched, the database no larger, and no replication slot behind.
+
 ## How much disk headroom it needs
 
 The docs ask for free space equal to the table plus its indexes. That is the
