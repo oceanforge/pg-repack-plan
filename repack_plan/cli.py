@@ -78,6 +78,9 @@ def main(argv=None):
     print()
     if online:
         print(f'Online, no maintenance window needed ({len(online)}):')
+        print('  -- the swap at the end still needs ACCESS EXCLUSIVE, so it queues')
+        print('  -- behind a slow query and everything else queues behind it.')
+        print('  SET lock_timeout = \'5s\';')
         for r, stmt in online:
             print('  ' + stmt)
     if window:

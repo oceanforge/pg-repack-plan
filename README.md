@@ -14,6 +14,9 @@ public.metrics_2026        32 MB   75.0%      24 MB  yes
 public.sessions            22 MB   40.1%       9 MB  no identity index, add a primary k
 
 Online, no maintenance window needed (2):
+  -- the swap at the end still needs ACCESS EXCLUSIVE, so it queues
+  -- behind a slow query and everything else queues behind it.
+  SET lock_timeout = '5s';
   REPACK (CONCURRENTLY) public.events;
   REPACK (CONCURRENTLY) public.metrics_2026;
 
@@ -39,6 +42,31 @@ Reads are blocked as well. On a 1.1 GB table, `VACUUM FULL` served **one** read 
 Note that `VACUUM FULL` is the *faster* of the two. It has the table to itself.
 The trade is total duration against staying online, which is usually the right
 trade and occasionally is not.
+
+## "Concurrent" describes the rewrite, not the swap
+
+`CONCURRENTLY` still takes `ACCESS EXCLUSIVE` to swap the files at the end. If
+anything is holding the table it waits, and while it waits every new query queues
+behind its pending lock request. Same table, same command:
+
+| | duration |
+|---|---|
+| nothing holding the table | 0.54 s |
+| one 8-second reader holding `ACCESS SHARE` | 7.08 s |
+
+An ordinary `SELECT` that arrived during the wait took **5.08 s** to come back. It
+was not competing with the long reader; it was queued behind the repack.
+
+```
+ pid   granted  mode                        query
+ 1891  t        AccessShareLock             SELECT count(*) FROM q2   <- long reader
+ 1894  t        ShareUpdateExclusiveLock    REPACK (CONCURRENTLY) q2
+ 1894  f        AccessExclusiveLock         REPACK (CONCURRENTLY) q2  <- waiting to swap
+ 1897  f        AccessShareLock             SELECT count(*) FROM q2   <- queued behind it
+```
+
+Run it when queries on that table are short, and set `lock_timeout` so it gives up
+instead of holding the queue open. The plan this tool prints includes one.
 
 ## What it refuses, and why this tool is useful
 
