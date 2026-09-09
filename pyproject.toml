@@ -1,0 +1,13 @@
+[project]
+name = "pg-repack-plan"
+version = "0.1.0"
+description = "Find bloated Postgres tables and say which ones REPACK (CONCURRENTLY) will accept."
+requires-python = ">=3.9"
+dependencies = ["psycopg[binary]>=3.1"]
+
+[project.scripts]
+pg-repack-plan = "repack_plan.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
