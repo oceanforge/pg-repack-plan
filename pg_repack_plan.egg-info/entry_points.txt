@@ -1,0 +1,2 @@
+[console_scripts]
+pg-repack-plan = repack_plan.cli:main

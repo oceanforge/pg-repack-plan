@@ -11,3 +11,7 @@ pg-repack-plan = "repack_plan.cli:main"
 [build-system]
 requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# bench/ is a script, not a package; say so or flat-layout discovery fails.
+packages = ["repack_plan"]
