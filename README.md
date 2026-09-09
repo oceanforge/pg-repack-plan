@@ -102,11 +102,19 @@ an older server and reports what will be available to you after upgrading:
 ```
 ! This server is PostgreSQL 18. REPACK arrived in 19, so the plan below is what
   you could run after upgrading.
+
+table                       size    dead    reclaim  repack online?
+public.events              75 MB   66.7%      50 MB  yes
+public.metrics_2026        16 MB   75.0%      12 MB  yes
+public.sessions            11 MB   40.1%       4 MB  no identity index, add a primary k
 ```
 
-That is the more useful mode right now. Finding out today that your largest table
-has no primary key gives you months to fix it, instead of discovering it during
-an upgrade.
+That output is from a real DigitalOcean Managed Postgres cluster
+(`db-amd-1vcpu-1gb`, Frankfurt, 18.6), not a local mock.
+
+This is the more useful mode right now. Finding out today that a large table has
+no primary key gives you months to fix it. Finding out during an upgrade gives
+you a decision to make at the worst possible moment.
 
 ## Tests
 
