@@ -112,6 +112,19 @@ performing final cleanup 181,819 / 181,819             3,000,000               2
 `catch-up` is the logical-decoding replay of everything that changed during the
 rewrite. On a large table this is how you tell "nearly done" from "barely started".
 
+Catch-up converges easily. Under 16 connections committing 1,120 updates a second
+throughout a rewrite of a 1549 MB table, the phases were:
+
+| phase | time |
+|---|---|
+| seq scanning heap | 13.46 s |
+| rebuilding index | 0.68 s |
+| catch-up | **0.19 s** |
+
+16,228 writes landed during the rewrite; replaying them took two tenths of a
+second. Nearly all the cost is the sequential scan, which does not care how busy
+the table is.
+
 It cancels cleanly too: `pg_cancel_backend` a second into a 1 GB repack left the
 table untouched, the database no larger, and no replication slot behind.
 
