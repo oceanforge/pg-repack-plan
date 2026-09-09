@@ -96,6 +96,22 @@ FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE c.relispartition AND c.relkind = 'r';
 ```
 
+## How much disk headroom it needs
+
+The docs ask for free space equal to the table plus its indexes. That is the
+worst case. `REPACK` writes a copy containing only the live rows, so on a bloated
+table the real requirement is smaller. Measured on a 517 MB table that was half
+dead tuples:
+
+| | |
+|---|---|
+| database before | 2164 MB |
+| peak during the rewrite | 2423 MB |
+| after | 1907 MB |
+
+Peak overhead was 259 MB, roughly half the size of the table being repacked. The
+more bloated the table, the less headroom you need relative to its current size.
+
 ## Install
 
 ```bash
